@@ -2,6 +2,7 @@
 
     python -m mv.segment inbox/sarga_01.m4a          # verses from 1
     python -m mv.segment inbox/sarga_01_v11.m4a      # verses from 11
+    python -m mv.segment inbox/sarga_01_v11_30.m4a   # verses 11–30
 
 How: (1) find stretches of sound separated by silence; (2) line them up with the hemistichs you
 were shown, in order, using one fact — a line's duration is roughly (its syllables × your pace).
@@ -156,10 +157,10 @@ def align(segs: list, hems: list) -> list:
 
 
 def _session_name(src: Path):
-    m = re.match(r"sarga_(\d+)(?:_v(\d+))?$", src.stem)
+    m = re.match(r"sarga_(\d+)(?:_v(\d+)(?:_(\d+))?)?$", src.stem)
     if not m:
-        raise SystemExit(f"name the file sarga_NN.m4a or sarga_NN_vSS.m4a (got {src.name})")
-    return src.stem, int(m.group(1)), int(m.group(2) or 1)
+        raise SystemExit(f"name the file sarga_NN, sarga_NN_vSS or sarga_NN_vSS_EE .m4a (got {src.name})")
+    return src.stem, int(m.group(1)), int(m.group(2) or 1), (int(m.group(3)) if m.group(3) else None)
 
 
 def _clip_audio(wav, sr, c: Clip):
@@ -169,14 +170,15 @@ def _clip_audio(wav, sr, c: Clip):
 
 
 def run(src: Path) -> dict:
-    name, sarga, start = _session_name(src)
+    name, sarga, start, end = _session_name(src)
     out = paths.DATA / "sessions" / name
     (out / "clips").mkdir(parents=True, exist_ok=True)
     wav_path = to_wav_24k_mono(src, out / "session.wav")
     wav, sr = sf.read(wav_path)
     wav = sosfiltfilt(butter(4, HIGHPASS_HZ, "highpass", fs=sr, output="sos"), wav)
 
-    hems = [h for v in load_sarga(sarga, start=start) for h in v.hemistichs]
+    hems = [h for v in load_sarga(sarga, start=start) if end is None or v.shloka <= end
+            for h in v.hemistichs]
     segs = split_long(speech_segments(wav, sr), wav, sr)
     # the session may stop early: only consider hemistichs the audio could plausibly cover
     clips = align(segs, hems)

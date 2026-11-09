@@ -82,3 +82,11 @@ def test_split_long_segment_at_dip():
     out = split_long(segs, wav, sr)
     assert len(out) == 5
     assert abs(out[3].end - (4 * 0.5 + 4 * 4.5 + 0.075)) < 0.1
+
+
+def test_session_name_variants():
+    from pathlib import Path
+    from mv.segment import _session_name
+    assert _session_name(Path("sarga_01.m4a")) == ("sarga_01", 1, 1, None)
+    assert _session_name(Path("sarga_01_v11.m4a")) == ("sarga_01_v11", 1, 11, None)
+    assert _session_name(Path("sarga_01_v11_30.m4a")) == ("sarga_01_v11_30", 1, 11, 30)
