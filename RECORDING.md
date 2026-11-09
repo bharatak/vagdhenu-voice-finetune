@@ -7,7 +7,9 @@ the pauses. Keeping these the same every day is what makes the result sound like
 - **iPhone Voice Memos:** Recording mode **Mono**, Audio Quality **Lossless**.
 - iPhone on a stand, **~20 cm** from your mouth, slightly below it. Same room, same spot, same distance.
 - Fan and AC **off**. A room with curtains, a bed or cushions has less echo.
-- Tanpura or śruti in **headphones only**. It must not be audible in the recording.
+- *Optional:* a tanpura/śruti drone in **headphones only**, never audible in the recording. It keeps the pitch
+  from drifting. Not needed: chanting relaxed in your usual puja rhythm matters more.
+- **Warm up first:** chant a śloka or two *before* pressing record, so the recording starts settled.
 - Open the day's script: `python -m mv.script_page <sarga> --open`.
 
 ## While chanting
