@@ -95,7 +95,7 @@ def _skip_cost(segs, j):
     return SKIP_SEG_RESTART if gap_after >= RESTART_GAP else SKIP_SEG
 
 
-def _dp(segs, hems, pace):
+def _dp(segs, hems, pace, optional=frozenset()):
     N, M = len(hems), len(segs)
     INF = math.inf
     cost = [[INF] * (M + 1) for _ in range(N + 1)]
@@ -110,8 +110,8 @@ def _dp(segs, hems, pace):
                 nc = c + _skip_cost(segs, j)
                 if nc < cost[i][j + 1]:
                     cost[i][j + 1], back[i][j + 1] = nc, ("seg", i, j)
-            if i < N:                                    # skip hemistich i
-                nc = c + SKIP_HEM
+            if i < N:                                    # skip hemistich i (free if optional)
+                nc = c + (0.0 if hems[i].id in optional else SKIP_HEM)
                 if nc < cost[i + 1][j]:
                     cost[i + 1][j], back[i + 1][j] = nc, ("hem", i, j)
                 expected = pace * hems[i].n_syll
@@ -137,8 +137,10 @@ def _dp(segs, hems, pace):
     return clips[::-1]
 
 
-def align(segs: list, hems: list) -> list:
-    """Best line-up of segments to hemistichs; returns accepted clips (cost < ACCEPT), in order."""
+def align(segs: list, hems: list, optional=frozenset()) -> list:
+    """Best line-up of segments to hemistichs; returns accepted clips (cost < ACCEPT), in order.
+    `optional` hemistich ids (damaged-text verses shown as "skip") may or may not have been chanted:
+    they are matched if present so the lines after them keep the right labels, but never returned."""
     if not segs or not hems:
         return []
     # first guess at pace from typical segments vs typical lines — robust to a session that
@@ -146,14 +148,14 @@ def align(segs: list, hems: list) -> list:
     long = [s.dur for s in segs if s.dur > 1.5] or [s.dur for s in segs]
     pace = float(np.median(long)) / float(np.median([h.n_syll for h in hems]))
     for _ in range(4):                                   # refine pace from the matched lines
-        clips = _dp(segs, hems, pace)
+        clips = _dp(segs, hems, pace, optional)
         if not clips:
             break
         new = float(np.median([(c.end - c.start) / c.hem.n_syll for c in clips]))
         if abs(new - pace) < 1e-3:
             break
         pace = new
-    return [c for c in clips if c.cost < ACCEPT]
+    return [c for c in clips if c.cost < ACCEPT and c.hem.id not in optional]
 
 
 def _session_name(src: Path):
@@ -177,13 +179,15 @@ def run(src: Path) -> dict:
     wav, sr = sf.read(wav_path)
     wav = sosfiltfilt(butter(4, HIGHPASS_HZ, "highpass", fs=sr, output="sos"), wav)
 
-    hems = [h for v in load_sarga(sarga, start=start) if end is None or v.shloka <= end
-            for h in v.hemistichs]
+    verses = [v for v in load_sarga(sarga, start=start, include_suspect=True)
+              if end is None or v.shloka <= end]
+    hems = [h for v in verses for h in v.hemistichs]
+    optional = {h.id for v in verses if v.suspect for h in v.hemistichs}
     segs = split_long(speech_segments(wav, sr), wav, sr)
     # the session may stop early: only consider hemistichs the audio could plausibly cover
-    clips = align(segs, hems)
+    clips = align(segs, hems, optional)
     last = max((hems.index(c.hem) for c in clips), default=-1)
-    hems_covered = hems[: last + 1]
+    hems_covered = [h for h in hems[: last + 1] if h.id not in optional]
 
     rows = []
     for c in clips:

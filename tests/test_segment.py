@@ -90,3 +90,21 @@ def test_session_name_variants():
     assert _session_name(Path("sarga_01.m4a")) == ("sarga_01", 1, 1, None)
     assert _session_name(Path("sarga_01_v11.m4a")) == ("sarga_01_v11", 1, 11, None)
     assert _session_name(Path("sarga_01_v11_30.m4a")) == ("sarga_01_v11_30", 1, 11, 30)
+
+
+def test_align_optional_lines_chanted():
+    H = hems(6)
+    opt = {H[2].id, H[3].id}                              # a damaged verse the user chanted anyway
+    segs = layout([4.8] * 6, [0.4] * 5)
+    clips = align(segs, H, optional=opt)
+    assert [c.hem.id for c in clips] == [H[0].id, H[1].id, H[4].id, H[5].id]
+    assert clips[2].start == segs[4].start
+
+
+def test_align_optional_lines_skipped():
+    H = hems(6)
+    opt = {H[2].id, H[3].id}                              # ... or skipped as the screen said
+    segs = layout([4.8] * 4, [0.4] * 3)
+    clips = align(segs, H, optional=opt)
+    assert [c.hem.id for c in clips] == [H[0].id, H[1].id, H[4].id, H[5].id]
+    assert clips[2].start == segs[2].start
