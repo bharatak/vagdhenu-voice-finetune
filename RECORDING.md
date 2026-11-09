@@ -5,7 +5,7 @@ the pauses. Keeping these the same every day is what makes the result sound like
 
 ## Setup (same every day)
 - **iPhone Voice Memos:** Recording mode **Mono**, Audio Quality **Lossless**.
-- iPhone on a stand, **~20 cm** from your mouth, slightly below it. Same room, same spot, same distance.
+- iPhone on a stand, **~25 cm** from your mouth, slightly below it (closer made your loudest syllables nearly distort). Same room, same spot, same distance.
 - Fan and AC **off**. A room with curtains, a bed or cushions has less echo.
 - *Optional:* a tanpura/śruti drone in **headphones only**, never audible in the recording. It keeps the pitch
   from drifting. Not needed: chanting relaxed in your usual puja rhythm matters more.
