@@ -25,6 +25,7 @@ header p{margin:0;color:var(--muted);font-size:14px}main{max-width:1000px;margin
 .row{display:grid;grid-template-columns:7.5em 1fr;gap:4px 12px;padding:12px 0;border-bottom:1px solid var(--rule);align-items:center}
 .id{font-family:ui-monospace,monospace;font-size:13px;color:var(--muted)}.id b{color:var(--fg);font-weight:600}
 .deva{font-size:24px;margin:0 0 6px}audio{width:100%;max-width:520px;height:36px}
+.check{font-size:13px;color:var(--warn);margin:4px 0 0}.check.ok{color:var(--muted)}
 .dropped{opacity:.4}.dropped .id::after{content:" dropped";color:var(--warn)}
 button{font:inherit;font-size:14px;padding:6px 12px;border-radius:6px;border:1px solid var(--rule);background:transparent;color:var(--fg);cursor:pointer;margin-top:8px}
 """
@@ -62,6 +63,19 @@ def _hemistich(hid: str):
     return hems[hid]
 
 
+def _checks(session_dir: Path) -> dict:
+    f = Path(session_dir) / "check.json"
+    return {c["id"]: c for c in json.loads(f.read_text(encoding="utf-8"))} if f.exists() else {}
+
+
+def _check_note(c, relabelled_to):
+    if not c or not c["shifted"]:
+        return ""
+    if relabelled_to == c["best"]:
+        return '<p class="check ok">✓ content check agrees</p>'
+    return f'<p class="check">⚠ sounds like {c["best"]} (margin {c["margin"]:.2f})</p>'
+
+
 def kept_clips(session_dir: Path) -> list:
     drop, relabel = _dropped(session_dir), _relabels(session_dir)
     out = []
@@ -81,10 +95,11 @@ def kept_clips(session_dir: Path) -> list:
 
 def render_html(session_dir: Path) -> str:
     session_dir = Path(session_dir)
-    drop, relabel = _dropped(session_dir), _relabels(session_dir)
+    drop, relabel, checks = _dropped(session_dir), _relabels(session_dir), _checks(session_dir)
     rows = _rows(session_dir)
     items = []
     for r in rows:
+        note = "" if r["id"] in drop else _check_note(checks.get(r["id"]), relabel.get(r["id"]))
         if r["id"] in relabel and r["id"] not in drop:
             h = _hemistich(relabel[r["id"]])
             r = {**r, "id": f'{r["id"]} → {h.id}', "deva": h.deva}
@@ -92,7 +107,7 @@ def render_html(session_dir: Path) -> str:
         cls = "row dropped" if r["id"] in drop else "row"
         items.append(f'<div class="{cls}"><div class="id"><b>{r["id"]}</b><br>{r["end"]-r["start"]:.1f}s · '
                      f'fit {r["cost"]:.2f}</div><div><p class="deva">{html.escape(r["deva"])}</p>'
-                     f'<audio controls preload="none" src="{html.escape(str(rel))}"></audio></div></div>')
+                     f'<audio controls preload="none" src="{html.escape(str(rel))}"></audio>{note}</div></div>')
     summary = {}
     if (session_dir / "summary.json").exists():
         summary = json.loads((session_dir / "summary.json").read_text())
