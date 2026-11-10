@@ -10,7 +10,8 @@ the pauses. Keeping these the same every day is what makes the result sound like
 - *Optional:* a tanpura/śruti drone in **headphones only**, never audible in the recording. It keeps the pitch
   from drifting. Not needed: chanting relaxed in your usual puja rhythm matters more.
 - **Warm up first:** chant a śloka or two *before* pressing record, so the recording starts settled.
-- Open the day's script: `python -m mv.script_page <sarga> --open`.
+- Open the day's script: `python -m mv.script_page <sarga> --script telugu --open` (or leave out `--script` for Devanagari).
+- **Chant what is on screen, not from the book.** Wording and verse splits differ between editions; the label is the screen text.
 
 ## While chanting
 1. Start recording, stay **silent for 3 seconds**, then begin.

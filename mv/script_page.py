@@ -5,6 +5,10 @@
 
 Because you chant exactly these lines in exactly this order, every clip's text is known in advance.
 Greyed "skip" verses have damaged source text — don't chant them.
+
+    python -m mv.script_page 5 --script telugu   # same lines, shown in Telugu letters
+
+The script only changes what you *read*; labels and training text stay Devanagari.
 """
 import argparse
 import html
@@ -13,12 +17,21 @@ import subprocess
 from mv import paths
 from mv.text import load_sarga
 
+SCRIPTS = ("devanagari", "telugu", "kannada")
+
+
+def _show(deva: str, script: str) -> str:
+    if script == "devanagari":
+        return deva
+    from indic_transliteration import sanscript
+    return sanscript.transliterate(deva, sanscript.DEVANAGARI, getattr(sanscript, script.upper()))
+
 CSS = """
 :root{--bg:#fbf8f1;--fg:#1d1a14;--muted:#8a8172;--skip:#c9c1b2;--accent:#9a4b16;--rule:#e7dfcf}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15130f;--fg:#efe8da;--muted:#8f8676;--skip:#4a453c;--accent:#e39a5c;--rule:#2a261f}}
 :root[data-theme="dark"]{--bg:#15130f;--fg:#efe8da;--muted:#8f8676;--skip:#4a453c;--accent:#e39a5c;--rule:#2a261f}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:"Noto Sans Devanagari",system-ui,sans-serif}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"Noto Sans Devanagari","Noto Sans Telugu","Noto Sans Kannada",system-ui,sans-serif}
 header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--rule);padding:12px 16px;
   display:flex;flex-wrap:wrap;gap:4px 16px;align-items:baseline}
 header h1{font-size:20px;margin:0;color:var(--accent)}
@@ -33,7 +46,7 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 40vh}
 """
 
 
-def render_html(sarga: int, start: int = 1) -> str:
+def render_html(sarga: int, start: int = 1, script: str = "devanagari") -> str:
     verses = load_sarga(sarga, start=start, include_suspect=True)
     rows = []
     for v in verses:
@@ -41,7 +54,7 @@ def render_html(sarga: int, start: int = 1) -> str:
         lines = []
         for h in v.hemistichs:
             danda = "॥" if h.ends_verse else "।"
-            lines.append(f'<p class="line">{html.escape(h.deva)} {danda}</p>')
+            lines.append(f'<p class="line">{html.escape(_show(h.deva, script))} {danda}</p>')
         if v.suspect:
             lines.append('<p class="skipnote">skip — source text damaged</p>')
         rows.append(f'<section class="{cls}" data-verse="{v.shloka}"><div class="num">{v.shloka}</div>'
@@ -50,7 +63,7 @@ def render_html(sarga: int, start: int = 1) -> str:
     return f"""<!doctype html><html lang="sa"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Sundarakāṇḍa {title}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600&family=Noto+Sans+Telugu:wght@400;600&family=Noto+Sans+Kannada:wght@400;600&display=swap" rel="stylesheet">
 <style>{CSS}</style></head><body>
 <header><h1>{title}</h1>
 <p>3 s silence to start · say nothing but the verses · stumble? stay silent 3 s, then restart that line</p></header>
@@ -61,11 +74,13 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("sarga", type=int)
     ap.add_argument("--start", type=int, default=1)
+    ap.add_argument("--script", choices=SCRIPTS, default="devanagari")
     ap.add_argument("--open", action="store_true", help="open the page in the browser")
     a = ap.parse_args()
-    out = paths.DATA / "script" / (f"sarga_{a.sarga:02d}" + (f"_v{a.start}" if a.start > 1 else "") + ".html")
+    out = paths.DATA / "script" / (f"sarga_{a.sarga:02d}" + (f"_v{a.start}" if a.start > 1 else "")
+                              + ("" if a.script == "devanagari" else f"_{a.script}") + ".html")
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(render_html(a.sarga, a.start), encoding="utf-8")
+    out.write_text(render_html(a.sarga, a.start, a.script), encoding="utf-8")
     print(out)
     if a.open:
         subprocess.run(["open", str(out)])
