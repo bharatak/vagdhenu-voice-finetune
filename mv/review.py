@@ -4,6 +4,8 @@
 
 Any clip that is wrong (wrong words, a stumble, a noise) -> put its id on its own line in
 data/sessions/<session>/drop.txt. Dropped clips never reach training.
+A clip that is a *different* line than its label -> "<clip id> <true line id>" on its own line in
+relabel.txt; it keeps its audio and takes that line's text. Both files use the clip ids as cut.
 """
 import argparse
 import html
@@ -44,17 +46,48 @@ def _dropped(session_dir: Path) -> set:
     return {l.strip() for l in f.read_text().splitlines() if l.strip()} if f.exists() else set()
 
 
+def _relabels(session_dir: Path) -> dict:
+    f = Path(session_dir) / "relabel.txt"
+    if not f.exists():
+        return {}
+    return dict(l.split() for l in f.read_text().splitlines() if l.strip())
+
+
+def _hemistich(hid: str):
+    from mv.text import load_sarga
+    sarga = int(hid.split(".")[1])
+    hems = {h.id: h for v in load_sarga(sarga, include_suspect=True) for h in v.hemistichs}
+    if hid not in hems:
+        raise ValueError(f"relabel.txt: no such line {hid}")
+    return hems[hid]
+
+
 def kept_clips(session_dir: Path) -> list:
-    drop = _dropped(session_dir)
-    return [r for r in _rows(session_dir) if r["id"] not in drop]
+    drop, relabel = _dropped(session_dir), _relabels(session_dir)
+    out = []
+    for r in _rows(session_dir):
+        if r["id"] in drop:
+            continue
+        if r["id"] in relabel:
+            h = _hemistich(relabel[r["id"]])
+            r = {**r, "id": h.id, "deva": h.deva, "n_syll": h.n_syll, "relabelled_from": r["id"]}
+        out.append(r)
+    ids = [r["id"] for r in out]
+    dup = sorted({i for i in ids if ids.count(i) > 1})
+    if dup:
+        raise ValueError(f"two kept clips share a label after relabel: {', '.join(dup)}")
+    return out
 
 
 def render_html(session_dir: Path) -> str:
     session_dir = Path(session_dir)
-    drop = _dropped(session_dir)
+    drop, relabel = _dropped(session_dir), _relabels(session_dir)
     rows = _rows(session_dir)
     items = []
     for r in rows:
+        if r["id"] in relabel and r["id"] not in drop:
+            h = _hemistich(relabel[r["id"]])
+            r = {**r, "id": f'{r["id"]} → {h.id}', "deva": h.deva}
         rel = Path(r["wav"]).relative_to(session_dir) if Path(r["wav"]).is_relative_to(session_dir) else r["wav"]
         cls = "row dropped" if r["id"] in drop else "row"
         items.append(f'<div class="{cls}"><div class="id"><b>{r["id"]}</b><br>{r["end"]-r["start"]:.1f}s · '
