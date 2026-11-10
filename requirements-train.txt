@@ -1,0 +1,20 @@
+# Training environment (Mac smoke tests + rented GPU). Python 3.10.
+#   uv venv .venv-train --python 3.10 && uv pip install --python .venv-train -r requirements-train.txt
+# On the GPU box, install torch/torchaudio with the CUDA index first (see scripts in Task 8).
+torch==2.5.1   # x-transformers==2.19.7 needs torch>=2.5 (upstream pip silently upgrades 2.4.1)
+torchaudio==2.5.1
+# upstream vagdhenu/requirements.txt pins:
+git+https://github.com/ai4bharat/IndicF5.git@13f7c4d627cc10111aea8fe9c0039462cacacdc7
+transformers==4.46.3
+accelerate==0.34.2
+vocos==0.1.0
+x-transformers==2.19.7
+numpy==1.26.4
+librosa==0.11.0
+soundfile
+huggingface_hub
+indic-transliteration
+# training extras
+datasets>=3.0   # older datasets breaks on pyarrow>=21 (PyExtensionType removed)
+tensorboard
+pytest
