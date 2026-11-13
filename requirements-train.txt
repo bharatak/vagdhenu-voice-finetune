@@ -18,3 +18,4 @@ indic-transliteration
 datasets>=3.0   # older datasets breaks on pyarrow>=21 (PyExtensionType removed)
 tensorboard
 pytest
+safetensors            # vagdhenu_mlx.convert (checkpoint -> MLX)
