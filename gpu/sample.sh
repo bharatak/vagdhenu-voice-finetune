@@ -9,8 +9,8 @@ source "$(dirname "$0")/env.sh"
 step_of() { local b; b=$(basename "$1" .pt); echo "${b#model_}"; }
 
 render() {   # $1 = checkpoint, $2 = output name
-  local out=$S/$2 ema=$CK/ema_$2.pt
-  mkdir -p "$out"
+  local out=$S/$2 ema=$EMA/ema_$2.pt
+  mkdir -p "$out" "$EMA"
   [ -f "$ema" ] || $PY $MV/train/export_ema.py "$1" "$ema" >/dev/null
   (cd $UP && $PY src/render.py --shard $MV/train/samples.json --voice "$ema" \
       --bank $MV/data/bank/bank.json --outdir "$out" --results "$out/res.json")

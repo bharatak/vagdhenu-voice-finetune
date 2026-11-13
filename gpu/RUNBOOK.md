@@ -51,14 +51,21 @@ ssh pod 'bash /workspace/myvoice/gpu/sample.sh /workspace/vagdhenu/models/voice_
 ssh pod 'bash /workspace/myvoice/gpu/train.sh'
 ssh -t pod 'tmux attach -t train'        # watch the progress bar; Ctrl-b then d to detach
 ```
-Closing the laptop is fine: tmux keeps training on the pod.
+Closing the laptop is fine: tmux keeps training on the pod. A stopped run can't be resumed (the
+pinned trainer crashes on `model_last.pt`); `train.sh` refuses to start while `/workspace/ckpt` has
+checkpoints, so bring home what you need and `rm -rf /workspace/ckpt` first.
 
 ## 6. Watch the loss curve
 TensorBoard: `https://<POD_ID>-6006.proxy.runpod.net`. Expect noisy loss that drifts down and then
 flattens. Flat does **not** mean done or good; listening decides.
 
-## 7. Listen as checkpoints arrive (every 500 updates)
+## 7. After training: render every checkpoint, then listen
+Training fills the A40 (44 of 46 GB), so samples are rendered afterwards (`WATCH=1 gpu/train.sh` renders
+during training on a bigger GPU). Each render exports a 1.3 GB EMA copy to `/workspace/ema/`, then the
+5.4 GB checkpoint can go:
 ```bash
+ssh pod 'source /workspace/myvoice/gpu/env.sh; rm -f $CK/model_last.pt
+  for ck in $CK/model_[0-9]*.pt; do bash $MV/gpu/sample.sh $ck && rm -f $ck; done'
 rsync -az pod:/workspace/samples/ data/gpu_samples/
 open data/gpu_samples
 ```
@@ -83,7 +90,7 @@ to ~0.21 while the grrr went DOWN — trust the ear). Render with it: `src/rende
 ## 8. Bring the chosen checkpoint home (1.3 GB, EMA weights only)
 ```bash
 STEP=…   # the one that sounded best
-mkdir -p models/run1 models/voc && rsync -az --info=progress2 pod:/workspace/ckpt/ema_$STEP.pt models/run1/
+mkdir -p models/run1 models/voc && rsync -az --info=progress2 pod:/workspace/ema/ema_$STEP.pt models/run1/
 rsync -az pod:/workspace/voc/voc_<VSTEP>.pth models/voc/
 PYTHONPATH=../vagdhenu/src .venv-train/bin/python -m vagdhenu_mlx.convert --voice models/run1/ema_$STEP.pt \
   --vocoder models/voc/voc_<VSTEP>.pth --vocab ../vagdhenu/models/vocab.txt --out models/mlx-myvoice

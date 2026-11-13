@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -11,9 +12,9 @@ from mv.dataset import rebase, rows, write_f5_dataset
 SR = 24000
 
 
-def _session(tmp_path, clips):
+def _session(tmp_path, clips, name="s"):
     """clips: [(id, deva, seconds)] -> a session dir like mv.segment writes."""
-    d = tmp_path / "sessions" / "s"
+    d = tmp_path / "sessions" / name
     (d / "clips").mkdir(parents=True)
     out = []
     for cid, deva, sec in clips:
@@ -49,8 +50,27 @@ def test_write_and_rebase(tmp_path):
     write_f5_dataset(r, out)
     ds = Dataset.from_file(str(out / "raw.arrow"))
     assert ds.column_names == ["audio_path", "text", "duration"]
-    assert ds[0]["audio_path"] == str(out / "wavs" / "5.1.30.2.wav") and (out / "wavs" / "5.1.30.2.wav").exists()
+    assert ds[0]["audio_path"] == str(out / "wavs" / "s__5.1.30.2.wav") and (out / "wavs" / "s__5.1.30.2.wav").exists()
     assert json.loads((out / "duration.json").read_text())["duration"] == pytest.approx([4.0], abs=0.01)
     assert json.loads((out / "stats.json").read_text())["n"] == 1
     rebase(out, "/workspace/dataset")
-    assert Dataset.from_file(str(out / "raw.arrow"))[0]["audio_path"] == "/workspace/dataset/wavs/5.1.30.2.wav"
+    assert Dataset.from_file(str(out / "raw.arrow"))[0]["audio_path"] == "/workspace/dataset/wavs/s__5.1.30.2.wav"
+
+
+def test_two_takes_of_one_line_in_two_sessions_are_both_kept(tmp_path):
+    from datasets import Dataset
+    a = _session(tmp_path, [("5.1.30.2", LINE, 4.0)], name="sarga_01")
+    b = _session(tmp_path, [("5.1.30.2", LINE, 4.5)], name="sarga_01_v30")
+    out = tmp_path / "dataset"
+    write_f5_dataset(rows([a, b], heldout=set()), out)
+    paths = [r["audio_path"] for r in Dataset.from_file(str(out / "raw.arrow"))]
+    assert len(set(paths)) == 2 and all(Path(p).exists() for p in paths)
+    assert sorted(round(sf.info(p).duration, 1) for p in paths) == [4.0, 4.5]
+
+
+def test_write_removes_wavs_left_from_an_earlier_build(tmp_path):
+    out = tmp_path / "dataset"
+    (out / "wavs").mkdir(parents=True)
+    (out / "wavs" / "dropped_cough.wav").write_bytes(b"x")
+    write_f5_dataset(rows([_session(tmp_path, [("5.1.30.2", LINE, 4.0)])], heldout=set()), out)
+    assert sorted(f.name for f in (out / "wavs").iterdir()) == ["s__5.1.30.2.wav"]

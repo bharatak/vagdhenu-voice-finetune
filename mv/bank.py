@@ -76,9 +76,9 @@ def bank_entry(clip: dict, n_syll: int, full_verse: str = "") -> dict:
 
 
 def build(out: Path = OUT) -> dict:
-    from mv.review import kept_clips
+    from mv.review import kept_clips, reviewed
     from mv.text import load_sarga
-    sessions = sorted(p.parent for p in (paths.DATA / "sessions").glob("*/clips.json"))
+    sessions = sorted(p.parent for p in (paths.DATA / "sessions").glob("*/clips.json") if reviewed(p.parent))
     clips, verse_text, loaded = [], {}, set()
     for d in sessions:
         sarga = int(d.name.split("_")[1])

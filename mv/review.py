@@ -1,6 +1,7 @@
 """Step 3: listen to the clips with their text, and throw out bad ones.
 
-    python -m mv.review sarga_01 --open
+    python -m mv.review sarga_01 --open     # listen, fill drop.txt / relabel.txt
+    python -m mv.review sarga_01 --done     # then mark it reviewed: only reviewed sessions are trained on
 
 Any clip that is wrong (wrong words, a stumble, a noise) -> put its id on its own line in
 data/sessions/<session>/drop.txt. Dropped clips never reach training.
@@ -76,6 +77,15 @@ def _check_note(c, relabelled_to):
     return f'<p class="check">⚠ sounds like {c["best"]} (margin {c["margin"]:.2f})</p>'
 
 
+def reviewed(session_dir: Path) -> bool:
+    """Has the user listened through this session? Only reviewed sessions go into the dataset."""
+    return (Path(session_dir) / "reviewed").exists()
+
+
+def mark_reviewed(session_dir: Path) -> None:
+    (Path(session_dir) / "reviewed").write_text("listened through; drop.txt / relabel.txt are final\n")
+
+
 def kept_clips(session_dir: Path) -> list:
     drop, relabel = _dropped(session_dir), _relabels(session_dir)
     out = []
@@ -127,8 +137,13 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("session")
     ap.add_argument("--open", action="store_true")
+    ap.add_argument("--done", action="store_true", help="mark the session reviewed (it then goes into the dataset)")
     a = ap.parse_args()
     d = paths.DATA / "sessions" / a.session
+    if a.done:
+        mark_reviewed(d)
+        print(f"{a.session}: marked reviewed")
+        raise SystemExit
     out = d / "review.html"
     out.write_text(render_html(d), encoding="utf-8")
     print(out)

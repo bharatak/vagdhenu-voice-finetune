@@ -46,3 +46,14 @@ def test_opus_round_trip_keeps_length_and_voice():
 def test_unknown_mode_is_an_error():
     with pytest.raises(ValueError):
         polish(np.zeros(10, np.float32), SR, "shiny")
+
+
+def test_filter_leaves_sibilants_and_visarga_alone():
+    """ś/ṣ/s/h are noise by nature; the fuzz gate must not mistake them for vocoder fuzz."""
+    from scipy.signal import butter, sosfiltfilt
+    rng = np.random.default_rng(1)
+    noise = rng.standard_normal(SR).astype(np.float32)
+    for lo, hi in [(3000, 6000), (4000, 7900)]:                       # ś/ṣ-like, s-like (below the 8 kHz cut)
+        burst = sosfiltfilt(butter(6, [lo, hi], "band", fs=SR, output="sos"), noise).astype(np.float32)
+        loss_db = 10 * np.log10(_band_energy(burst, lo, hi) / _band_energy(polish(burst, SR, "filter"), lo, hi))
+        assert loss_db < 2.0, f"{lo}-{hi} Hz noise lost {loss_db:.1f} dB"

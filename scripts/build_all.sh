@@ -5,9 +5,9 @@
 #
 #   1. segment  every inbox/sarga_*.m4a that has no data/sessions/<name>/clips.json yet
 #   2. check    every session without check.json (content check: does each clip sound like its line?)
-#   3. list     the new sessions you still need to review by ear (mv.review <name> --open)
-#   4. dataset  rebuild data/dataset/ from all kept clips (held-out verses in train/samples.json excluded)
-#   5. bank     rebuild your reference bank (one clean clip of you per meter)
+#   3. dataset  rebuild data/dataset/ from the kept clips of REVIEWED sessions (held-out verses excluded)
+#   4. bank     rebuild your reference bank from reviewed sessions (one clean clip of you per meter)
+#   5. list     every session still waiting for your review (mv.review <name> --open, then --done)
 #
 # Then retrain on a GPU: gpu/RUNBOOK.md ("Retrain later").
 set -euo pipefail
@@ -45,6 +45,10 @@ echo "── bank"
 
 echo
 echo "${#new[@]} new session(s)."
-for n in ${new[@]+"${new[@]}"}; do
-  echo "  review by ear, then re-run this script:  PYTHONPATH=. $MLXPY -m mv.review $n --open"
+for d in data/sessions/*/; do
+  name=$(basename "$d")
+  [ -f "$d/clips.json" ] && [ ! -f "$d/reviewed" ] || continue
+  echo "  NOT REVIEWED (not in the dataset yet): $name"
+  echo "    PYTHONPATH=. $MLXPY -m mv.review $name --open   # listen; drop.txt / relabel.txt"
+  echo "    PYTHONPATH=. $MLXPY -m mv.review $name --done   # then re-run this script"
 done

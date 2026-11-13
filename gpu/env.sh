@@ -3,6 +3,7 @@ export W=${W:-/workspace}
 export UP=${UP:-$W/vagdhenu}                # Prathosh's repo (code + released weights)
 export MV=${MV:-$W/myvoice}                 # our code + dataset + bank (rsynced from the Mac)
 export CK=$W/ckpt                     # training checkpoints
+export EMA=$W/ema                     # EMA exports: OUTSIDE $CK (the trainer warm-starts from the newest *.pt there)
 export S=$W/samples                   # rendered sample verses, one folder per step
 export VAGDHENU_UPSTREAM=$UP
 export PYTHONPATH=$UP/BigVGAN:$MV

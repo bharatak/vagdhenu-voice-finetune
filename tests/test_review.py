@@ -61,3 +61,11 @@ def test_relabel_to_unknown_line_is_an_error(tmp_path):
 def test_review_shows_relabel(tmp_path):
     html = render_html(_relabel(_session(tmp_path), "5.1.1.1 5.1.2.1\n"))
     assert "5.1.1.1 → 5.1.2.1" in html
+
+
+def test_a_session_is_unreviewed_until_marked_done(tmp_path):
+    from mv.review import mark_reviewed, reviewed
+    d = _session(tmp_path)
+    assert not reviewed(d)
+    mark_reviewed(d)
+    assert reviewed(d)

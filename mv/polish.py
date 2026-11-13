@@ -6,8 +6,9 @@
 
 Why it works: the fuzz is quiet energy sitting BETWEEN the loud harmonic lines. A lossy codec like
 Opus spends its few bits on the loud lines and drops the rest — which is why a WhatsApp-forwarded
-render sounds clean. The filter does the same on purpose: per frequency it estimates the quiet
-'floor' and turns down anything near it (by at most 12 dB, smoothed over time so it doesn't warble).
+render sounds clean. The filter does the same on purpose, in VOICED moments only (sibilants and
+visarga are noise by nature and are left alone): in each moment it finds the valleys between the
+harmonic lines and turns down anything near that level (by at most 12 dB, smoothed over time so it doesn't warble).
 """
 import shutil
 import subprocess
@@ -34,6 +35,13 @@ def _filter(y: np.ndarray, sr: int) -> np.ndarray:
     win = max(3, int(round(300 / (sr / 1024))))
     floor = uniform_filter1d(minimum_filter1d(mag, size=win, axis=0), size=win, axis=0) + 1e-9
     gain = np.clip((mag - GATE * floor) / (mag + 1e-9), 10 ** (-MAX_CUT_DB / 20), 1.0)
+    # gate VOICED moments only: vowels carry most energy below 1.5 kHz; ś/ṣ/s/h/visarga live higher and
+    # are noise by nature — gating them would dull every sibilant by ~6 dB.
+    f = np.fft.rfftfreq(1024, 1 / sr)[:, None]
+    p = mag ** 2
+    low_share = p[f[:, 0] < 1500].sum(0) / (p.sum(0) + 1e-12)                  # per frame, 0..1
+    voiced = np.clip((low_share - 0.3) / 0.3, 0.0, 1.0)                         # 0 = unvoiced, 1 = voiced
+    gain = 1.0 - voiced[None, :] * (1.0 - gain)
     gain = uniform_filter1d(gain, size=5, axis=1)                                 # smooth over ~50 ms
     _, out = istft(X * gain, sr, nperseg=1024, noverlap=768)
     return out[:len(y)].astype(np.float32)

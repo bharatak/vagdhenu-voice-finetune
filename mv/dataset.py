@@ -57,7 +57,7 @@ def rows(session_dirs: list, heldout: set = None) -> list:
             dur = sf.info(c["wav"]).duration
             if not MIN_S <= dur <= MAX_S:
                 continue
-            out.append({"id": c["id"], "audio_path": str(Path(c["wav"]).resolve()),
+            out.append({"id": c["id"], "session": Path(d).name, "audio_path": str(Path(c["wav"]).resolve()),
                         "text": train_text(c["deva"]), "duration": round(float(dur), 3)})
     return out
 
@@ -74,10 +74,12 @@ def _write_arrow(records: list, path: Path) -> None:
 
 def write_f5_dataset(rows_: list, out: Path) -> None:
     out = Path(out)
-    (out / "wavs").mkdir(parents=True, exist_ok=True)
+    shutil.rmtree(out / "wavs", ignore_errors=True)    # no stale clips from an earlier build (dropped ones!)
+    (out / "wavs").mkdir(parents=True)
     records = []
     for r in rows_:
-        dst = out / "wavs" / f"{r['id']}.wav"
+        # session in the name: two takes of one line (two recordings) must not overwrite each other
+        dst = out / "wavs" / (f"{r['session']}__{r['id']}.wav" if r.get("session") else f"{r['id']}.wav")
         shutil.copyfile(r["audio_path"], dst)
         records.append({"audio_path": str(dst), "text": r["text"], "duration": r["duration"]})
     _write_arrow(records, out / "raw.arrow")
@@ -119,7 +121,12 @@ if __name__ == "__main__":
         rebase(a.out, a.rebase)
         print(f"raw.arrow now points at {a.rebase}/wavs/")
     else:
-        sessions = sorted(p.parent for p in (paths.DATA / "sessions").glob("*/clips.json"))
+        from mv.review import reviewed
+        found = sorted(p.parent for p in (paths.DATA / "sessions").glob("*/clips.json"))
+        sessions = [d for d in found if reviewed(d)]
+        for d in found:
+            if not reviewed(d):
+                print(f"skipping {d.name}: not reviewed yet (python -m mv.review {d.name} --open, then --done)")
         all_kept = [c for d in sessions for c in kept_clips(d)]
         short = sum(1 for c in all_kept if sf.info(c["wav"]).duration < MIN_S)
         r = rows(sessions)
