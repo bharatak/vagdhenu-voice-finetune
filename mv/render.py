@@ -3,6 +3,7 @@
     python -m mv.render --text "<verse>" --out data/renders/x.wav                  # Prathosh's model, YOUR bank
     python -m mv.render --text "<verse>" --bank upstream --out data/renders/y.wav  # Prathosh's model, his bank
     python -m mv.render --text "<verse>" --model data/mlx_ft --out z.wav           # your fine-tuned model
+    python -m mv.render --text "<verse>" --model models/mlx-myvoice --polish filter --out p.wav   # + polish
 
 Swapping only the bank shows what in-context cloning alone does; swapping the model shows
 what fine-tuning adds.
@@ -13,13 +14,14 @@ from pathlib import Path
 import soundfile as sf
 
 from mv import paths
+from mv.polish import polish
 
 BANK = paths.DATA / "bank" / "bank.json"
 UP_BANK = paths.UPSTREAM_SRC / "reference_bank" / "bank.json"
 
 
 def render(text: str, out: Path, model=paths.MLX_UP, bank=BANK, seed: int = 60, nfe: int = 64,
-           meter_hint: str = "") -> Path:
+           meter_hint: str = "", polish_mode: str = "none") -> Path:
     from chant_text import detect_meter_key
     from vagdhenu_mlx import Renderer
     r = Renderer(str(model), bank_path=str(bank), nfe=nfe, log=lambda *a, **k: None)
@@ -28,6 +30,7 @@ def render(text: str, out: Path, model=paths.MLX_UP, bank=BANK, seed: int = 60, 
     meter = stems.get(found) or next((m for m in r.meters() if m.lower() == found), None) or r.meters()[0]
     print(f"meter: {found or '?'} -> reference '{meter}'" + ("" if meter.lower() == found or found in stems else " (fallback)"))
     sr, y = r.render_one(text, meter, seed=seed)
+    y = polish(y, sr, polish_mode)
     out = Path(out)
     out.parent.mkdir(parents=True, exist_ok=True)
     sf.write(out, y, sr)
@@ -43,6 +46,8 @@ if __name__ == "__main__":
     ap.add_argument("--seed", type=int, default=60)
     ap.add_argument("--nfe", type=int, default=64, help="denoising steps (upstream default; 32 is ~2x faster)")
     ap.add_argument("--meter", default="", help="force the meter, e.g. drutavilambita (bank key or wav stem)")
+    ap.add_argument("--polish", default="none", choices=["none", "filter", "opus"],
+                    help="tame the vocoder's residual grrr (see mv/polish.py)")
     ap.add_argument("--out", required=True, type=Path)
     a = ap.parse_args()
-    render(a.text, a.out, a.model, UP_BANK if a.bank == "upstream" else a.bank, a.seed, a.nfe, a.meter)
+    render(a.text, a.out, a.model, UP_BANK if a.bank == "upstream" else a.bank, a.seed, a.nfe, a.meter, a.polish)
