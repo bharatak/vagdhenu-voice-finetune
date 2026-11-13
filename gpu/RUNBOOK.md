@@ -97,3 +97,15 @@ Check the pod list is empty.
 | Date | GPU | Pod created → terminated | Updates | Cost | Notes |
 |---|---|---|---|---|---|
 | 2026-11-13 | A40 48 GB, $0.59/h (CA-MTL-1) | 02:54 → ~06:45 UTC | DiT 3000 (2.0 s/step) + vocoder 2000 (1.1 s/step) | $1.60 | Chose DiT 3000 + vocoder 1250. Loss 0.84 → 0.52. Watcher off (GPU 44/46 GB). |
+
+## Retrain later (more recordings → run 2)
+1. Drop new recordings in `inbox/` as `sarga_NN.m4a` (or `sarga_NN_v11_30.m4a` for verses 11–30).
+   Don't record sarga 68 — it is the held-out test.
+2. `scripts/build_all.sh` → segments + content-checks only the new files, then prints the
+   `mv.review … --open` command for each. Review by ear, then run `scripts/build_all.sh` again
+   (rebuilds `data/dataset/` and `data/bank/`).
+3. Steps 1–3 above (pod, upload, setup), then `gpu/train.sh`. Warm-start from Prathosh's model again
+   (default) — not from run 1 — so the new run sees all your data at once.
+4. Step 7b with `--warm models/voc/voc_1250.pth` uploaded to the pod: start the vocoder from YOUR run-1
+   vocoder instead of Prathosh's.
+5. Steps 8–9: bring home, convert to `models/mlx-myvoice`, terminate. Add a row to the log.
