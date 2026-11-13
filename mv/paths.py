@@ -1,10 +1,11 @@
 """Where things live. Importing this module puts the upstream Vāgdhenu `src/` on sys.path,
 so `import prep_text`, `import chant_text`, `import vagdhenu_mlx` work without editing upstream."""
+import os
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent           # myvoice/
-UPSTREAM = Path("/Users/bharatak/Documents/vagdhenu/vagdhenu")
+UPSTREAM = Path(os.environ.get("VAGDHENU_UPSTREAM", "/Users/bharatak/Documents/vagdhenu/vagdhenu"))  # GPU box: /workspace/vagdhenu
 UPSTREAM_SRC = UPSTREAM / "src"
 MODELS_UP = UPSTREAM / "models"                          # released torch weights + vocab.txt
 MLX_UP = MODELS_UP / "mlx"                               # released weights converted for MLX
