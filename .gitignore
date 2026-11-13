@@ -5,3 +5,6 @@ inbox/
 __pycache__/
 .superpowers/
 .pytest_cache/
+originals/
+runs/
+.DS_Store
