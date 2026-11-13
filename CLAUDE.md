@@ -40,6 +40,8 @@ PYTHONPATH=../vagdhenu/src .venv-train/bin/python -m vagdhenu_mlx.convert --voic
 - `models/run1/ema_{500..3000}.pt`: DiT EMA checkpoints. `models/voc/voc_{1250,2000}.pth`: vocoders.
 
 ## Gotchas learned the hard way
+- Only sessions with a `reviewed` marker (`mv.review <s> --done`) reach the dataset and bank;
+  `build_all.sh` lists the rest on every run. Dataset wavs are named `<session>__<id>.wav`.
 - Text must go through the renderer's exact chain (`mv.dataset.train_text`: Devanagari → SLP1 →
   Kannada + fixes). Any character outside the released `vocab.txt` is unseen by the model.
 - Half-reference rule: a bank entry's `ref_text` must match its wav exactly, or the render drifts.

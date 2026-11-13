@@ -128,7 +128,9 @@ Needs the upstream repo next to this one (`../vagdhenu`, set up with its `script
 a training venv: `uv venv .venv-train --python 3.10 && uv pip install -r requirements-train.txt`.
 
 ```bash
-scripts/build_all.sh                       # new recordings in inbox/ → data/dataset + data/bank
+scripts/build_all.sh                       # new recordings in inbox/ → sessions; lists those to review
+PYTHONPATH=. ../vagdhenu/.venv/bin/python -m mv.review <session> --open   # listen; then --done
+scripts/build_all.sh                       # reviewed sessions → data/dataset + data/bank
 .venv-train/bin/python -m pytest -q        # tests
 ```
 GPU training: follow `gpu/RUNBOOK.md`. A full run of DiT + vocoder takes about 2.5 h on an A40, under $2.
