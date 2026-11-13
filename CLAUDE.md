@@ -25,6 +25,7 @@ learning, so explain each step briefly and give them something to listen to afte
 ## Commands
 ```bash
 .venv-train/bin/python -m pytest -q                       # all tests (must stay green)
+scripts/chant.sh "<verse>"                                # quickest: my model → data/renders/chant_*.wav, opens it
 scripts/build_all.sh                                      # inbox/*.m4a → sessions → dataset + bank (idempotent)
 PYTHONPATH=. ../vagdhenu/.venv/bin/python -m mv.render --model models/mlx-myvoice --text "<verse । … ॥>" --out x.wav
 #   --meter <name>   force the meter (detector needs pādas)   --bank upstream   Prathosh's references

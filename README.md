@@ -18,6 +18,13 @@ PYTHONPATH=. ../vagdhenu/.venv/bin/python -m mv.render --model models/mlx-myvoic
   --out data/renders/verse.wav
 ```
 
+Or simply (my model, anuṣṭubh and polish are the defaults; it writes a randomly named wav, prints
+a clickable path and starts playing it):
+
+```bash
+scripts/chant.sh "धर्मक्षेत्रे कुरुक्षेत्रे समवेता युयुत्सवः । मामकाः पाण्डवाश्चैव किमकुर्वत सञ्जय ॥"
+```
+
 Type any anuṣṭubh verse in Devanagari and get it chanted in my voice to Prathosh's melody, in about
 20 s on an M4 Pro. No GPU is needed after training.
 
@@ -109,6 +116,7 @@ RECORDING.md          how to record (same room, distance and pace every day)
 mv/                   the Mac pipeline: script_page, intake, segment, check, review, dataset, bank, render, polish
 train/                GPU scripts: finetune.py (DiT), finetune_vocoder.py, copysynth.py, export_ema.py, samples.json (held-out verses)
 gpu/                  RunPod: RUNBOOK.md (step by step, with a cost log), setup_pod.sh, train.sh, sample.sh, env.sh
+scripts/chant.sh      one verse → a clickable wav (defaults to my model)
 scripts/build_all.sh  recordings → dataset + bank in one command (only new recordings are processed)
 tests/                pytest suite
 docs/                 design spec and implementation plan
