@@ -124,7 +124,7 @@ docs/                 design spec and implementation plan
 
 ## Running it yourself
 
-Needs the upstream repo next to this one (`../vagdhenu`, set up with its `scripts/setup_mlx.sh`) and
+Needs the upstream repo cloned next to this one (`git clone https://github.com/prathoshap/vagdhenu ../vagdhenu`, set up with its `scripts/setup_mlx.sh`) and
 a training venv: `uv venv .venv-train --python 3.10 && uv pip install -r requirements-train.txt`.
 
 ```bash
@@ -137,9 +137,13 @@ GPU training: follow `gpu/RUNBOOK.md`. A full run of DiT + vocoder takes about 2
 
 ## Credits
 
-* **Vāgdhenu** by Prathosh: the model, the chant-specific text frontend, the reference-bank method
+* **Vāgdhenu** by Prathosh ([github.com/prathoshap/vagdhenu](https://github.com/prathoshap/vagdhenu), Apache 2.0): the model, the chant-specific text frontend, the reference-bank method
   and the released weights. This project only adapts it, and never modifies the upstream repo.
 * **IndicF5** (AI4Bharat), built on **F5-TTS**: the DiT.
 * **BigVGAN-v2** (NVIDIA): the vocoder architecture and pretrained discriminators.
 
 Model weights fall under their original licences and are not redistributed here.
+
+## Licence
+
+Apache 2.0 (see `LICENSE`), the same as Vāgdhenu.

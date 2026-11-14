@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent           # myvoice/
-UPSTREAM = Path(os.environ.get("VAGDHENU_UPSTREAM", "/Users/bharatak/Documents/vagdhenu/vagdhenu"))  # GPU box: /workspace/vagdhenu
+UPSTREAM = Path(os.environ.get("VAGDHENU_UPSTREAM", ROOT.parent / "vagdhenu"))  # sibling clone; GPU box: /workspace/vagdhenu
 UPSTREAM_SRC = UPSTREAM / "src"
 MODELS_UP = UPSTREAM / "models"                          # released torch weights + vocab.txt
 MLX_UP = MODELS_UP / "mlx"                               # released weights converted for MLX
